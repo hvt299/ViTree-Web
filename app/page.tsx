@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { memberService } from '@/services/memberService';
 import { Member } from '@/types/member';
 import MemberModal from '@/components/MemberModal';
+import FamilyTree from '@/components/FamilyTree';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'TABLE' | 'TREE'>('TABLE');
 
   const handleLogout = () => {
     Cookies.remove('access_token');
@@ -161,110 +163,130 @@ export default function DashboardPage() {
             <Search className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" />
             <button type="submit" className="hidden">Search</button>
           </form>
+
+          <div className="flex bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setViewMode('TABLE')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${viewMode === 'TABLE' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Dạng bảng
+            </button>
+            <button
+              onClick={() => setViewMode('TREE')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${viewMode === 'TREE' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Sơ đồ Cây
+            </button>
+          </div>
         </div>
 
         {/* Bảng dữ liệu */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-600">
-                  <th className="p-4">STT</th>
-                  <th className="p-4">Họ và tên</th>
-                  <th className="p-4">Đời thứ</th>
-                  <th className="p-4">Giới tính</th>
-                  <th className="p-4">Tình trạng</th>
-                  <th className="p-4 text-center">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center">
-                      <Loader2 className="w-6 h-6 text-orange-500 animate-spin mx-auto" />
-                      <p className="text-gray-500 mt-2 text-sm">Đang tải dữ liệu...</p>
-                    </td>
+        {viewMode === 'TABLE' ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-600">
+                    <th className="p-4">STT</th>
+                    <th className="p-4">Họ và tên</th>
+                    <th className="p-4">Đời thứ</th>
+                    <th className="p-4">Giới tính</th>
+                    <th className="p-4">Tình trạng</th>
+                    <th className="p-4 text-center">Thao tác</th>
                   </tr>
-                ) : members.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center text-gray-500">
-                      Chưa có dữ liệu thành viên nào.
-                    </td>
-                  </tr>
-                ) : (
-                  members.map((member, index) => (
-                    <tr key={member._id} className="hover:bg-orange-50/50 transition-colors">
-                      <td className="p-4 text-gray-500">{index + 1}</td>
-                      <td className="p-4 font-medium text-gray-900 flex items-center gap-3">
-                        {member.avatarUrl ? (
-                          <img src={member.avatarUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs">
-                            {member.fullName.charAt(0)}
-                          </div>
-                        )}
-                        {member.fullName}
-                      </td>
-                      <td className="p-4 text-gray-600">Đời {member.generation}</td>
-                      <td className="p-4">
-                        <span className={`px-2 py-1 rounded-md text-xs font-medium ${member.gender === 'MALE' ? 'bg-blue-50 text-blue-600' :
-                          member.gender === 'FEMALE' ? 'bg-pink-50 text-pink-600' : 'bg-gray-100 text-gray-600'
-                          }`}>
-                          {member.gender === 'MALE' ? 'Nam' : member.gender === 'FEMALE' ? 'Nữ' : 'Chưa rõ'}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <span className={`px-2 py-1 rounded-md text-xs font-medium ${member.status === 'ALIVE' ? 'bg-green-50 text-green-600' :
-                            member.status === 'DECEASED' ? 'bg-gray-100 text-gray-600' : 'bg-yellow-50 text-yellow-600'
-                          }`}>
-                          {member.status === 'ALIVE' ? 'Còn sống' : member.status === 'DECEASED' ? 'Đã mất' : 'Không rõ'}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center">
-                        <button
-                          onClick={() => handleOpenEdit(member)}
-                          className="text-gray-400 hover:text-blue-600 p-1 transition-colors"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(member._id, member.fullName)}
-                          className="text-gray-400 hover:text-red-600 p-1 ml-2 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center">
+                        <Loader2 className="w-6 h-6 text-orange-500 animate-spin mx-auto" />
+                        <p className="text-gray-500 mt-2 text-sm">Đang tải dữ liệu...</p>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          {/* Giao diện Phân trang */}
-          {!searchQuery && totalPages > 1 && (
-            <div className="flex items-center justify-between p-4 border-t border-gray-100 bg-gray-50">
-              <p className="text-sm text-gray-500">
-                Trang <span className="font-medium text-gray-900">{currentPage}</span> / {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+                  ) : members.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-gray-500">
+                        Chưa có dữ liệu thành viên nào.
+                      </td>
+                    </tr>
+                  ) : (
+                    members.map((member, index) => (
+                      <tr key={member._id} className="hover:bg-orange-50/50 transition-colors">
+                        <td className="p-4 text-gray-500">{index + 1}</td>
+                        <td className="p-4 font-medium text-gray-900 flex items-center gap-3">
+                          {member.avatarUrl ? (
+                            <img src={member.avatarUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs">
+                              {member.fullName.charAt(0)}
+                            </div>
+                          )}
+                          {member.fullName}
+                        </td>
+                        <td className="p-4 text-gray-600">Đời {member.generation}</td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded-md text-xs font-medium ${member.gender === 'MALE' ? 'bg-blue-50 text-blue-600' :
+                            member.gender === 'FEMALE' ? 'bg-pink-50 text-pink-600' : 'bg-gray-100 text-gray-600'
+                            }`}>
+                            {member.gender === 'MALE' ? 'Nam' : member.gender === 'FEMALE' ? 'Nữ' : 'Chưa rõ'}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded-md text-xs font-medium ${member.status === 'ALIVE' ? 'bg-green-50 text-green-600' :
+                            member.status === 'DECEASED' ? 'bg-gray-100 text-gray-600' : 'bg-yellow-50 text-yellow-600'
+                            }`}>
+                            {member.status === 'ALIVE' ? 'Còn sống' : member.status === 'DECEASED' ? 'Đã mất' : 'Không rõ'}
+                          </span>
+                        </td>
+                        <td className="p-4 text-center">
+                          <button
+                            onClick={() => handleOpenEdit(member)}
+                            className="text-gray-400 hover:text-blue-600 p-1 transition-colors"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(member._id, member.fullName)}
+                            className="text-gray-400 hover:text-red-600 p-1 ml-2 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
+            
+            {/* Giao diện Phân trang */}
+            {!searchQuery && totalPages > 1 && (
+              <div className="flex items-center justify-between p-4 border-t border-gray-100 bg-gray-50">
+                <p className="text-sm text-gray-500">
+                  Trang <span className="font-medium text-gray-900">{currentPage}</span> / {totalPages}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <FamilyTree members={members} />
+        )}
       </main>
 
       <MemberModal
