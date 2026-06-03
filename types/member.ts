@@ -1,20 +1,45 @@
+export enum Gender {
+    MALE = 'MALE',
+    FEMALE = 'FEMALE',
+    UNKNOWN = 'UNKNOWN',
+}
+
+export enum LifeStatus {
+    ALIVE = 'ALIVE',
+    DECEASED = 'DECEASED',
+    UNKNOWN = 'UNKNOWN',
+}
+
+export interface LunarDeathAnniversary {
+    day?: number;
+    month?: number;
+    isLeapMonth?: boolean;
+    displayText?: string;
+}
+
 export interface Member {
     _id: string;
     fullName: string;
-    gender: 'MALE' | 'FEMALE' | 'UNKNOWN';
+    tuName?: string;
+    gender: Gender;
+    status: LifeStatus;
+
     avatarUrl?: string;
     shortNote?: string;
-    isAlive: boolean;
+    isHeirless?: boolean;
+
     birthDate?: string;
     deathDate?: string;
+    lunarDeathAnniversary?: LunarDeathAnniversary;
     burialPlace?: string;
 
-    fatherId?: string | Member;
-    motherId?: string | Member;
+    fatherIds?: (string | Member)[];
+    motherIds?: (string | Member)[];
     spouseIds?: (string | Member)[];
 
     orderInFamily: number;
     generation: number;
+    branchId?: string;
 
     createdAt?: string;
     updatedAt?: string;

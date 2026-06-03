@@ -214,9 +214,10 @@ export default function DashboardPage() {
                         </span>
                       </td>
                       <td className="p-4">
-                        <span className={`px-2 py-1 rounded-md text-xs font-medium ${member.isAlive ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-600'
+                        <span className={`px-2 py-1 rounded-md text-xs font-medium ${member.status === 'ALIVE' ? 'bg-green-50 text-green-600' :
+                            member.status === 'DECEASED' ? 'bg-gray-100 text-gray-600' : 'bg-yellow-50 text-yellow-600'
                           }`}>
-                          {member.isAlive ? 'Còn sống' : 'Đã mất'}
+                          {member.status === 'ALIVE' ? 'Còn sống' : member.status === 'DECEASED' ? 'Đã mất' : 'Không rõ'}
                         </span>
                       </td>
                       <td className="p-4 text-center">
