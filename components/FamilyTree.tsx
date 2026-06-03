@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactFlow, {
     Background,
     Controls,
@@ -10,6 +10,7 @@ import ReactFlow, {
     useReactFlow,
     ReactFlowProvider,
 } from 'reactflow';
+import { Loader2 } from 'lucide-react';
 
 import 'reactflow/dist/style.css';
 import { CSSProperties } from 'react';
@@ -27,6 +28,7 @@ import {
 
 import jsPDF from 'jspdf';
 import FamilyToolbar from './FamilyToolbar';
+import { memberService } from '@/services/memberService';
 
 interface Props {
     members: Member[];
@@ -48,7 +50,7 @@ export default function FamilyTree(props: Props) {
     );
 }
 
-function FamilyTreeInner({ members }: Props) {
+function FamilyTreeInner({ members: initialMembers }: Props) {
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     const { fitView, getNodes } = useReactFlow();
@@ -56,8 +58,43 @@ function FamilyTreeInner({ members }: Props) {
     const [query, setQuery] = useState('');
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
+    const [allMembers, setAllMembers] =
+        useState<Member[]>(initialMembers);
+
+    const [isFetching, setIsFetching] =
+        useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        setIsFetching(true);
+
+        memberService
+            .getMembers(1, 2000)
+            .then(res => {
+                if (isMounted) {
+                    setAllMembers(res.data);
+                }
+            })
+            .catch(err => {
+                console.error(
+                    'Lỗi tải full gia phả:',
+                    err
+                );
+            })
+            .finally(() => {
+                if (isMounted) {
+                    setIsFetching(false);
+                }
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
     const { nodes, edges } = useMemo(() => {
-        const layout = buildFamilyLayout(members);
+        const layout = buildFamilyLayout(allMembers);
 
         return {
             nodes: layout.nodes,
@@ -72,7 +109,7 @@ function FamilyTreeInner({ members }: Props) {
                 return edge;
             }),
         };
-    }, [members]);
+    }, [allMembers]);
 
     const filteredNodes = useMemo(() => {
         if (!query) return nodes;
@@ -173,8 +210,20 @@ function FamilyTreeInner({ members }: Props) {
                     via-white
                     to-orange-50
                     overflow-hidden
+                    relative
                 "
             >
+                {isFetching && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
+                        <div className="flex flex-col items-center gap-3 p-5 bg-white rounded-2xl shadow-xl border border-orange-100">
+                            <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+                            <span className="font-bold text-orange-700">
+                                Đang tải toàn bộ sơ đồ gia phả...
+                            </span>
+                        </div>
+                    </div>
+                )}
+
                 <ReactFlow
                     nodes={highlightedNodes}
                     edges={edges}
@@ -182,10 +231,10 @@ function FamilyTreeInner({ members }: Props) {
                     edgeTypes={edgeTypes}
                     fitView
                     minZoom={0.1}
-                    // onNodeClick={(_, node) => {
-                    //     setSelectedId(node.id);
-                    //     setTimeout(() => fitView(), 100);
-                    // }}
+                // onNodeClick={(_, node) => {
+                //     setSelectedId(node.id);
+                //     setTimeout(() => fitView(), 100);
+                // }}
                 >
                     <Controls />
                     <MiniMap />

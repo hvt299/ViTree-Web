@@ -9,17 +9,17 @@ export default function FamilyTreeLegend() {
 
             <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2">
-                    <div className="w-6 h-[3px] bg-blue-500" />
+                    <div className="w-6 h-0.75 bg-blue-500" />
                     <span>Quan hệ Cha</span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <div className="w-6 h-[3px] bg-pink-500" />
+                    <div className="w-6 h-0.75 bg-pink-500" />
                     <span>Quan hệ Mẹ</span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <div className="w-6 h-[3px] border-t-2 border-dashed border-orange-500" />
+                    <div className="w-6 h-0.75 border-t-2 border-dashed border-orange-500" />
                     <span>Hôn nhân</span>
                 </div>
             </div>
