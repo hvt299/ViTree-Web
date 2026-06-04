@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { Handle, Position } from 'reactflow';
 import { Gender, LifeStatus, Member } from '@/types/member';
+import { User, CalendarDays, Skull, HeartPulse } from 'lucide-react';
 
 interface Props {
     data: { member: Member; isMain?: boolean; isLastChild?: boolean };
@@ -20,17 +21,22 @@ function getOrderLabel(order: number, isLastChild?: boolean) {
 export default function FamilyMemberNode({ data }: Props) {
     const { member, isMain, isLastChild } = data;
 
-    const genderStyle =
-        member.gender === Gender.MALE ? 'border-blue-400 bg-blue-50'
-            : member.gender === Gender.FEMALE ? 'border-pink-400 bg-pink-50'
-                : 'border-gray-400 bg-gray-50';
+    const isDeceased = member.status === LifeStatus.DECEASED;
+
+    const genderStyle = isDeceased
+        ? 'border-gray-400 bg-gray-100/90 grayscale-[0.6] opacity-90'
+        : member.gender === Gender.MALE
+            ? 'border-blue-400 bg-blue-50'
+            : member.gender === Gender.FEMALE
+                ? 'border-pink-400 bg-pink-50'
+                : 'border-slate-400 bg-slate-50';
 
     const statusBadge =
-        member.status === LifeStatus.ALIVE ? 'bg-green-100 text-green-700'
-            : member.status === LifeStatus.DECEASED ? 'bg-slate-200 text-slate-700'
-                : 'bg-gray-100 text-gray-600';
+        member.status === LifeStatus.ALIVE ? 'bg-green-100 text-green-700 border-green-200'
+            : member.status === LifeStatus.DECEASED ? 'bg-gray-200 text-gray-700 border-gray-300'
+                : 'bg-yellow-100 text-yellow-700 border-yellow-200';
 
-    const roleBadge = member.orderInFamily === 1 ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700';
+    const roleBadge = member.orderInFamily === 1 ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-orange-100 text-orange-700 border-orange-200';
 
     const roleLabel = getOrderLabel(member.orderInFamily, isLastChild);
 
@@ -38,20 +44,20 @@ export default function FamilyMemberNode({ data }: Props) {
 
     let relationLabel = null;
     if (!isMain) {
-        if (member.gender === Gender.FEMALE) relationLabel = '🌸 Dâu';
-        else if (member.gender === Gender.MALE) relationLabel = '🤵 Rể';
-        else relationLabel = '🤝 Phối ngẫu';
+        if (member.gender === Gender.FEMALE) relationLabel = 'Dâu';
+        else if (member.gender === Gender.MALE) relationLabel = 'Rể';
+        else relationLabel = 'Phối ngẫu';
     }
 
     return (
         <div
             className={`
                 w-100 rounded-3xl border-[3px] shadow-xl overflow-visible transition-all 
-                hover:shadow-2xl hover:scale-[1.02] ${genderStyle}
+                hover:shadow-2xl ${genderStyle}
             `}
         >
-            <Handle type="target" position={Position.Top} id="top" className="w-3 h-3 bg-blue-500" />
-            <Handle type="source" position={Position.Bottom} id="bottom" className="w-3 h-3 bg-blue-500" />
+            <Handle type="target" position={Position.Top} id="top" className="w-3 h-3 bg-blue-500 border-2 border-white" />
+            <Handle type="source" position={Position.Bottom} id="bottom" className="w-3 h-3 bg-blue-500 border-2 border-white" />
 
             <Handle type="source" position={Position.Left} id="left-source" className="opacity-0" />
             <Handle type="target" position={Position.Left} id="left-target" className="opacity-0" />
@@ -60,13 +66,12 @@ export default function FamilyMemberNode({ data }: Props) {
 
             <div className="p-6 space-y-4">
                 <div className="flex gap-4 items-center">
-                    <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-white shadow-md bg-white shrink-0">
+                    {/* AVATAR CHUYÊN NGHIỆP */}
+                    <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-white shadow-md bg-white shrink-0 flex items-center justify-center">
                         {member.avatarUrl ? (
                             <Image src={member.avatarUrl} alt={member.fullName} fill className="object-cover" />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center text-3xl">
-                                {member.gender === Gender.MALE ? '👨' : '👩'}
-                            </div>
+                            <User size={36} className={isDeceased ? 'text-gray-400' : 'text-slate-300'} />
                         )}
                     </div>
 
@@ -89,13 +94,13 @@ export default function FamilyMemberNode({ data }: Props) {
                             )}
 
                             {showOrder && (
-                                <span className={`px-3 py-1 rounded-full text-sm font-bold ${roleBadge}`}>
+                                <span className={`px-3 py-1 rounded-full text-sm font-bold border ${roleBadge}`}>
                                     {roleLabel}
                                 </span>
                             )}
 
                             {relationLabel && (
-                                <span className="px-3 py-1 rounded-full text-sm font-bold bg-purple-100 text-purple-700">
+                                <span className="px-3 py-1 rounded-full text-sm font-bold border bg-purple-100 text-purple-700 border-purple-200">
                                     {relationLabel}
                                 </span>
                             )}
@@ -103,16 +108,23 @@ export default function FamilyMemberNode({ data }: Props) {
                     </div>
                 </div>
 
-                <div className="text-base font-medium text-gray-700 space-y-2 bg-white/50 p-3 rounded-xl">
+                <div className="text-base font-medium text-gray-700 space-y-2 bg-white/60 p-3 rounded-xl border border-white/40">
                     {member.birthDate && (
-                        <div className="flex items-center gap-2"><span>🎂</span><span>Sinh: {new Date(member.birthDate).getFullYear()}</span></div>
+                        <div className="flex items-center gap-2">
+                            <CalendarDays size={16} className="text-gray-500" />
+                            <span>Sinh: {new Date(member.birthDate).getFullYear()}</span>
+                        </div>
                     )}
                     {member.deathDate && (
-                        <div className="flex items-center gap-2"><span>⚰️</span><span>Mất: {new Date(member.deathDate).getFullYear()}</span></div>
+                        <div className="flex items-center gap-2">
+                            <Skull size={16} className="text-gray-500" />
+                            <span>Mất: {new Date(member.deathDate).getFullYear()}</span>
+                        </div>
                     )}
-                    <div className="pt-1">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-sm font-bold shadow-sm ${statusBadge}`}>
-                            {member.status === LifeStatus.ALIVE ? '🟢 Còn sống' : member.status === LifeStatus.DECEASED ? '⚫ Đã mất' : '❔ Không rõ'}
+                    <div className="pt-1 flex items-center gap-2">
+                        <HeartPulse size={16} className="text-gray-500" />
+                        <span className={`inline-flex px-3 py-1 rounded-full text-sm font-bold shadow-sm border ${statusBadge}`}>
+                            {member.status === LifeStatus.ALIVE ? 'Còn sống' : member.status === LifeStatus.DECEASED ? 'Đã mất' : 'Không rõ'}
                         </span>
                     </div>
                 </div>

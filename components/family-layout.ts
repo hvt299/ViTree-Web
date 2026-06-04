@@ -5,8 +5,8 @@ type MemberMap = Map<string, Member>;
 
 const NODE_WIDTH = 400;
 const NODE_HEIGHT = 280;
-const X_GAP = 80;
-const Y_GAP = 360;
+const X_GAP = 180;
+const Y_GAP = 450;
 
 function getId(v: any): string {
     if (!v) return '';

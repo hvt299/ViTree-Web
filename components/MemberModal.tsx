@@ -157,7 +157,7 @@ export default function MemberModal({ isOpen, onClose, onSuccess, members, editD
                     birthDate: editData.birthDate ? editData.birthDate.split('T')[0] : '',
                     deathDate: editData.deathDate ? editData.deathDate.split('T')[0] : '',
                     burialPlace: editData.burialPlace || '', shortNote: editData.shortNote || '',
-                    generation: editData.generation || 1, orderInFamily: editData.orderInFamily || 1,
+                    generation: editData.generation ?? 1, orderInFamily: editData.orderInFamily ?? 1,
                     branchId: editData.branchId || '',
                     fatherIds: getParentIds(editData.fatherIds), motherIds: getParentIds(editData.motherIds), spouseIds: getParentIds(editData.spouseIds),
                     lunarDay: editData.lunarDeathAnniversary?.day?.toString() || '',

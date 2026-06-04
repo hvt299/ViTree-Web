@@ -1,6 +1,7 @@
 'use client';
 
 import { BaseEdge, EdgeLabelRenderer, getStraightPath, type EdgeProps } from 'reactflow';
+import { Heart } from 'lucide-react';
 
 export default function MarriageEdge({
     id, sourceX, sourceY, targetX, targetY, style = {}, markerEnd,
@@ -15,7 +16,7 @@ export default function MarriageEdge({
             <BaseEdge
                 id={id}
                 path={edgePath}
-                style={{ stroke: '#f59e0b', strokeWidth: 4, strokeDasharray: '8 6', ...style }}
+                style={{ stroke: '#f59e0b', strokeWidth: 3, strokeDasharray: '6 6', ...style }}
                 markerEnd={markerEnd}
             />
             <EdgeLabelRenderer>
@@ -25,9 +26,9 @@ export default function MarriageEdge({
                         transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
                         pointerEvents: 'all',
                     }}
-                    className="px-2 py-1 rounded-full bg-white shadow-md border-2 border-amber-300 text-sm font-bold text-amber-600 select-none cursor-default hover:scale-110 transition"
+                    className="p-1.5 rounded-full bg-white shadow-sm border border-amber-200 text-amber-500 flex items-center justify-center cursor-default"
                 >
-                    ❤️
+                    <Heart size={14} fill="currentColor" />
                 </div>
             </EdgeLabelRenderer>
         </>
