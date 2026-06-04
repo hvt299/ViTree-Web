@@ -5,18 +5,20 @@ import { Handle, Position } from 'reactflow';
 import { Gender, LifeStatus, Member } from '@/types/member';
 
 interface Props {
-    data: { member: Member; isMain?: boolean };
+    data: { member: Member; isMain?: boolean; isLastChild?: boolean };
 }
 
-function getOrderLabel(order: number) {
+function getOrderLabel(order: number, isLastChild?: boolean) {
+    if (!order || order === 0) return '';
     if (order === 1) return 'Con trưởng';
+    if (isLastChild) return 'Con út';
     if (order === 2) return 'Con thứ 2';
     if (order === 3) return 'Con thứ 3';
     return `Con thứ ${order}`;
 }
 
 export default function FamilyMemberNode({ data }: Props) {
-    const { member, isMain } = data;
+    const { member, isMain, isLastChild } = data;
 
     const genderStyle =
         member.gender === Gender.MALE ? 'border-blue-400 bg-blue-50'
@@ -30,9 +32,9 @@ export default function FamilyMemberNode({ data }: Props) {
 
     const roleBadge = member.orderInFamily === 1 ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700';
 
-    const roleLabel = getOrderLabel(member.orderInFamily);
+    const roleLabel = getOrderLabel(member.orderInFamily, isLastChild);
 
-    const showOrder = isMain && member.generation > 1;
+    const showOrder = isMain && member.generation > 1 && member.orderInFamily > 0;
 
     let relationLabel = null;
     if (!isMain) {

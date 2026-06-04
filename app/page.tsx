@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [members, setMembers] = useState<Member[]>([]);
   const [total, setTotal] = useState(0);
+  const [maxGeneration, setMaxGeneration] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -24,6 +25,19 @@ export default function DashboardPage() {
   const handleLogout = () => {
     Cookies.remove('access_token');
     router.push('/login');
+  };
+
+  const fetchMaxGeneration = async () => {
+    try {
+      const res = await memberService.getMembers(1, 5000);
+      if (res.data && res.data.length > 0) {
+        setMaxGeneration(Math.max(...res.data.map(m => m.generation || 1)));
+      } else {
+        setMaxGeneration(0);
+      }
+    } catch (error) {
+      console.error('Lỗi khi tính số thế hệ:', error);
+    }
   };
 
   const fetchMembers = async (pageToFetch = currentPage) => {
@@ -67,6 +81,7 @@ export default function DashboardPage() {
     try {
       await memberService.remove(id);
       fetchMembers();
+      fetchMaxGeneration();
     } catch (error) {
       alert('Có lỗi xảy ra khi xóa thành viên!');
     }
@@ -87,6 +102,10 @@ export default function DashboardPage() {
       fetchMembers(currentPage);
     }
   }, [currentPage]);
+
+  useEffect(() => {
+    fetchMaxGeneration();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -117,7 +136,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={handleOpenAdd}
-            className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
+            className="flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-linear-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-md shadow-orange-500/20 rounded-xl transition-all"
           >
             <Plus className="w-4 h-4" />
             Thêm thành viên
@@ -143,8 +162,7 @@ export default function DashboardPage() {
             <div>
               <p className="text-sm font-medium text-gray-500">Thế hệ hiện tại</p>
               <p className="text-3xl font-bold text-gray-900">
-                {/* Lấy generation lớn nhất trong danh sách */}
-                {loading ? '-' : (members.length > 0 ? Math.max(...members.map(m => m.generation)) : 0)}
+                {maxGeneration === 0 && loading ? '-' : maxGeneration}
               </p>
             </div>
           </div>
@@ -258,7 +276,7 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
-            
+
             {/* Giao diện Phân trang */}
             {!searchQuery && totalPages > 1 && (
               <div className="flex items-center justify-between p-4 border-t border-gray-100 bg-gray-50">
@@ -295,6 +313,7 @@ export default function DashboardPage() {
         onSuccess={() => {
           setIsModalOpen(false);
           fetchMembers(currentPage);
+          fetchMaxGeneration();
         }}
         members={members}
         editData={editingMember}

@@ -2,7 +2,7 @@
 
 export default function FamilyTreeLegend() {
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
             <h3 className="font-semibold mb-3">
                 Chú giải
             </h3>

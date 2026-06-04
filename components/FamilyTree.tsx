@@ -203,7 +203,7 @@ function FamilyTreeInner({ members: initialMembers }: Props) {
                 ref={wrapperRef}
                 className="
                     h-[80vh]
-                    rounded-3xl
+                    rounded-2xl
                     border
                     bg-linear-to-br
                     from-amber-50
@@ -211,6 +211,8 @@ function FamilyTreeInner({ members: initialMembers }: Props) {
                     to-orange-50
                     overflow-hidden
                     relative
+                    shadow-sm
+                    border-gray-100
                 "
             >
                 {isFetching && (

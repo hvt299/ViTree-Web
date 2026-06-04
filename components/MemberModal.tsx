@@ -309,8 +309,8 @@ export default function MemberModal({ isOpen, onClose, onSuccess, members, editD
                                     <input type="number" min="1" value={formData.generation} onChange={e => setFormData({ ...formData, generation: Number(e.target.value) })} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Thứ bậc (1: Trưởng, 2: Thứ...)</label>
-                                    <input type="number" min="1" value={formData.orderInFamily} onChange={e => setFormData({ ...formData, orderInFamily: Number(e.target.value) })} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Thứ bậc (0: Không rõ, 1: Trưởng, 2: Thứ...)</label>
+                                    <input type="number" min="0" value={formData.orderInFamily} onChange={e => setFormData({ ...formData, orderInFamily: Number(e.target.value) })} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl cursor-pointer hover:bg-orange-50/50 transition-colors">

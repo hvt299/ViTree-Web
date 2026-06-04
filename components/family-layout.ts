@@ -28,44 +28,142 @@ export function buildFamilyLayout(members: Member[]) {
     const mainIds = new Set<string>();
     const inLawIds = new Set<string>();
 
-    const sortedMembers = [...members].sort((a, b) => {
-        const aGen = a.gender || 'UNKNOWN';
-        const bGen = b.gender || 'UNKNOWN';
-        if (aGen === 'MALE' && bGen !== 'MALE') return -1;
-        if (aGen !== 'MALE' && bGen === 'MALE') return 1;
-        return getId(a).localeCompare(getId(b));
+    const spouseMap = new Map<string, Set<string>>();
+    members.forEach(m => spouseMap.set(m._id, new Set()));
+    members.forEach(m => {
+        m.spouseIds?.forEach(sid => {
+            const s = getId(sid);
+            if (spouseMap.has(s)) {
+                spouseMap.get(m._id)!.add(s);
+                spouseMap.get(s)!.add(m._id);
+            }
+        });
     });
 
-    sortedMembers.forEach(m => {
-        if ((m.fatherIds?.length || 0) > 0 || (m.motherIds?.length || 0) > 0) {
+    members.forEach(m => {
+        const hasParents = (m.fatherIds?.some(id => memberMap.has(getId(id)))) ||
+            (m.motherIds?.some(id => memberMap.has(getId(id))));
+        if (hasParents) {
             mainIds.add(m._id);
         }
     });
 
-    sortedMembers.forEach(m => {
-        if (mainIds.has(m._id)) return;
+    let changed = true;
+    while (changed) {
+        changed = false;
+        members.forEach(m => {
+            if (mainIds.has(m._id) || inLawIds.has(m._id)) return;
 
-        if (!m.spouseIds || m.spouseIds.length === 0) {
-            mainIds.add(m._id);
-            return;
-        }
+            const spouses = Array.from(spouseMap.get(m._id) || []);
+            const hasMainSpouse = spouses.some(sid => mainIds.has(sid));
 
-        const spouses = m.spouseIds.map(id => getId(id));
-        const hasMainSpouse = spouses.some(sid => mainIds.has(sid));
+            if (hasMainSpouse) {
+                inLawIds.add(m._id);
+                changed = true;
+            }
+        });
+    }
 
-        if (hasMainSpouse) {
-            inLawIds.add(m._id);
-        } else {
-            mainIds.add(m._id);
-        }
+    const remaining = members.filter(m => !mainIds.has(m._id) && !inLawIds.has(m._id));
+    remaining.sort((a, b) => {
+        if (a.generation !== b.generation) return (a.generation || 1) - (b.generation || 1);
+        const aM = a.gender === 'MALE' ? 0 : 1;
+        const bM = b.gender === 'MALE' ? 0 : 1;
+        if (aM !== bM) return aM - bM;
+        return a._id.localeCompare(b._id);
+    });
+
+    remaining.forEach(m => {
+        if (mainIds.has(m._id) || inLawIds.has(m._id)) return;
+        mainIds.add(m._id);
+
+        const spouses = Array.from(spouseMap.get(m._id) || []);
+        spouses.forEach(sid => {
+            if (!mainIds.has(sid) && !inLawIds.has(sid)) {
+                inLawIds.add(sid);
+            }
+        });
     });
 
     const isMainMember = (m: Member) => mainIds.has(m._id);
 
+    const childrenMap = new Map<string, Member[]>();
+    for (const m of members) {
+        const parents = [...(m.fatherIds || []), ...(m.motherIds || [])];
+        for (const p of parents) {
+            const pId = getId(p);
+            if (!childrenMap.has(pId)) childrenMap.set(pId, []);
+            childrenMap.get(pId)!.push(m);
+        }
+    }
+
+    const getOrder = (o?: number) => (!o || o === 0) ? 9999 : o;
+
+    for (const children of childrenMap.values()) {
+        children.sort((a, b) => getOrder(a.orderInFamily) - getOrder(b.orderInFamily));
+    }
+
+    const roots = members.filter(m =>
+        isMainMember(m) &&
+        !(m.fatherIds?.some(f => memberMap.has(getId(f)))) &&
+        !(m.motherIds?.some(mId => memberMap.has(getId(mId))))
+    );
+
+    roots.sort((a, b) => getOrder(a.orderInFamily) - getOrder(b.orderInFamily));
+
+    const lineageOrder = new Map<string, number>();
+    let currentIndex = 0;
+
+    function traverseLineage(memberId: string) {
+        if (lineageOrder.has(memberId)) return;
+        lineageOrder.set(memberId, currentIndex++);
+        const children = childrenMap.get(memberId) || [];
+        for (const child of children) {
+            traverseLineage(child._id);
+        }
+    }
+
+    for (const root of roots) {
+        traverseLineage(root._id);
+    }
+
+    for (const m of members) {
+        if (isMainMember(m) && !lineageOrder.has(m._id)) {
+            traverseLineage(m._id);
+        }
+    }
+
+    const isLastChildMap = new Map<string, boolean>();
+    const validMains = members.filter(m => isMainMember(m) && (m.orderInFamily || 0) > 0);
+
+    for (const m of validMains) {
+        const parentsM = [...(m.fatherIds || []), ...(m.motherIds || [])].map(getId);
+        if (parentsM.length === 0) continue;
+
+        let isMax = true;
+        for (const other of validMains) {
+            if (m._id === other._id) continue;
+            const parentsOther = [...(other.fatherIds || []), ...(other.motherIds || [])].map(getId);
+
+            const shareParent = parentsM.some(p => parentsOther.includes(p));
+            if (shareParent) {
+                if ((other.orderInFamily || 0) > (m.orderInFamily || 0)) {
+                    isMax = false;
+                    break;
+                }
+            }
+        }
+
+        if (isMax && (m.orderInFamily || 0) > 1) {
+            isLastChildMap.set(m._id, true);
+        }
+    }
+
     const generationMap = new Map<number, Member[]>();
     for (const m of members) {
-        if (!generationMap.has(m.generation)) generationMap.set(m.generation, []);
-        generationMap.get(m.generation)!.push(m);
+        const gen = m.generation || 1;
+        if (!generationMap.has(gen)) generationMap.set(gen, []);
+        generationMap.get(gen)!.push(m);
     }
 
     const genKeys = [...generationMap.keys()].sort((a, b) => a - b);
@@ -77,7 +175,11 @@ export function buildFamilyLayout(members: Member[]) {
         const mainMembers = list.filter(m => isMainMember(m));
         const inLaws = list.filter(m => !isMainMember(m));
 
-        mainMembers.sort((a, b) => a.orderInFamily - b.orderInFamily);
+        mainMembers.sort((a, b) => {
+            const idxA = lineageOrder.get(a._id) ?? 999999;
+            const idxB = lineageOrder.get(b._id) ?? 999999;
+            return idxA - idxB;
+        });
 
         let currentX = 0;
         const placed = new Set<string>();
@@ -86,11 +188,7 @@ export function buildFamilyLayout(members: Member[]) {
         for (const m of mainMembers) {
             if (placed.has(m._id)) continue;
 
-            const spouses = inLaws.filter(s =>
-                s.spouseIds?.some(id => getId(id) === m._id) ||
-                m.spouseIds?.some(id => getId(id) === s._id)
-            );
-
+            const spouses = inLaws.filter(s => spouseMap.get(m._id)?.has(s._id));
             const unplacedSpouses = spouses.filter(s => !placed.has(s._id));
 
             const leftSpouses = unplacedSpouses.filter((_, i) => i % 2 === 0).reverse();
@@ -128,7 +226,11 @@ export function buildFamilyLayout(members: Member[]) {
                 id: rn.id,
                 type: 'familyMember',
                 position: { x: rn.x + shiftX, y: gi * Y_GAP },
-                data: { member: rn.member, isMain: rn.isMain },
+                data: {
+                    member: rn.member,
+                    isMain: rn.isMain,
+                    isLastChild: isLastChildMap.get(rn.id) || false
+                },
             });
         }
     }
