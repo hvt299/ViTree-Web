@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import ReactFlow, { Background, Controls, MiniMap, useReactFlow, ReactFlowProvider, Handle, Position } from 'reactflow';
+import { 
+    ReactFlow, Background, Controls, MiniMap, useReactFlow, ReactFlowProvider, Handle, Position
+} from '@xyflow/react';
 import { Maximize, Minimize, Map as MapIcon, User, X } from 'lucide-react';
-import 'reactflow/dist/style.css';
+import '@xyflow/react/dist/style.css';
 import { CSSProperties } from 'react';
 
 import FamilyMemberNode from './FamilyMemberNode';
@@ -65,7 +67,7 @@ function FamilyTreeInner({ members, searchQuery = '', genderFilter = '', statusF
     const highlightedNodes = useMemo(() => {
         return nodes.map(n => {
             if (n.type === 'unionNode') return n;
-            const m = n.data?.member;
+            const m = n.data?.member as Member;
             if (!m) return n;
 
             const isSearchMatch = !searchQuery || m.fullName.toLowerCase().includes(searchQuery.toLowerCase().trim());
@@ -245,7 +247,7 @@ function FamilyTreeInner({ members, searchQuery = '', genderFilter = '', statusF
                     <MiniMap
                         nodeColor={(n) => {
                             if (n.type === 'unionNode') return 'transparent';
-                            const m = n.data?.member;
+                            const m = n.data?.member as Member;
                             if (!m) return '#eee';
                             if (m.status === 'DECEASED') return '#cbd5e1';
                             if (m.gender === 'MALE') return '#bfdbfe';

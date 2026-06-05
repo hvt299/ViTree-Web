@@ -1,4 +1,4 @@
-import { Edge, Node } from 'reactflow';
+import { Edge, Node } from '@xyflow/react';
 import { Member } from '@/types/member';
 
 type MemberMap = Map<string, Member>;
@@ -101,8 +101,8 @@ export function buildFamilyLayout(members: Member[]) {
         visited.add(member._id);
 
         const spouses = members.filter(s => !isMainMember(s) && spouseMap.get(member._id)?.has(s._id));
-        
-        const rawChildren = members.filter(c => 
+
+        const rawChildren = members.filter(c =>
             isMainMember(c) && (c.fatherIds?.map(getId).includes(member._id) || c.motherIds?.map(getId).includes(member._id))
         );
         rawChildren.sort((a, b) => getOrder(a.orderInFamily) - getOrder(b.orderInFamily));
@@ -120,8 +120,8 @@ export function buildFamilyLayout(members: Member[]) {
         return cluster;
     }
 
-    const roots = members.filter(m => 
-        isMainMember(m) && 
+    const roots = members.filter(m =>
+        isMainMember(m) &&
         !(m.fatherIds?.some(f => memberMap.has(getId(f)))) &&
         !(m.motherIds?.some(mId => memberMap.has(getId(mId))))
     ).sort((a, b) => getOrder(a.orderInFamily) - getOrder(b.orderInFamily));
@@ -131,11 +131,11 @@ export function buildFamilyLayout(members: Member[]) {
     function calcWidth(cluster: Cluster) {
         const parentNodesCount = 1 + cluster.spouses.length;
         const parentsWidth = parentNodesCount * NODE_WIDTH + (parentNodesCount - 1) * X_GAP;
-        
+
         let childrenWidth = 0;
         for (const c of cluster.children) childrenWidth += calcWidth(c);
         if (cluster.children.length > 1) childrenWidth += (cluster.children.length - 1) * X_GAP;
-        
+
         cluster.width = Math.max(parentsWidth, childrenWidth);
         return cluster.width;
     }
@@ -143,10 +143,10 @@ export function buildFamilyLayout(members: Member[]) {
     function assignPositions(cluster: Cluster, centerX: number) {
         cluster.x = centerX;
         if (cluster.children.length === 0) return;
-        
+
         const totalChildrenWidth = cluster.children.reduce((sum, c) => sum + c.width, 0) + (cluster.children.length - 1) * X_GAP;
         let currentX = centerX - totalChildrenWidth / 2;
-        
+
         for (const c of cluster.children) {
             const childCenterX = currentX + c.width / 2;
             assignPositions(c, childCenterX);
@@ -159,26 +159,28 @@ export function buildFamilyLayout(members: Member[]) {
         calcWidth(rc);
         const centerX = currentRootX + rc.width / 2;
         assignPositions(rc, centerX);
-        currentRootX += rc.width + FAMILY_GAP; 
+        currentRootX += rc.width + FAMILY_GAP;
     }
 
     const placedNodes = new Set<string>();
 
     function flattenCluster(cluster: Cluster) {
         if (placedNodes.has(cluster.main._id)) return;
-        placedNodes.add(cluster.main._id);
-        
+
         const m = cluster.main;
         const spouses = cluster.spouses;
-        
+
         const totalNodes = 1 + spouses.length;
         const totalWidth = totalNodes * NODE_WIDTH + (totalNodes - 1) * X_GAP;
         let startX = cluster.x - totalWidth / 2 + NODE_WIDTH / 2;
-        
+
         const leftSpouses = spouses.filter((_, i) => i % 2 === 0).reverse();
         const rightSpouses = spouses.filter((_, i) => i % 2 === 1);
-        
+
         const pushNode = (mem: Member, x: number, y: number, isMain: boolean) => {
+            if (placedNodes.has(mem._id)) return;
+            placedNodes.add(mem._id);
+
             nodes.push({
                 id: mem._id, type: 'familyMember',
                 position: { x: x - NODE_WIDTH / 2, y },
@@ -187,10 +189,10 @@ export function buildFamilyLayout(members: Member[]) {
         };
 
         for (const s of leftSpouses) { pushNode(s, startX, cluster.y, false); startX += NODE_WIDTH + X_GAP; }
-        pushNode(m, startX, cluster.y, true); 
+        pushNode(m, startX, cluster.y, true);
         startX += NODE_WIDTH + X_GAP;
         for (const s of rightSpouses) { pushNode(s, startX, cluster.y, false); startX += NODE_WIDTH + X_GAP; }
-        
+
         for (const c of cluster.children) flattenCluster(c);
     }
 
@@ -211,7 +213,7 @@ export function buildFamilyLayout(members: Member[]) {
     for (const m of members) {
         if (!isMainMember(m)) continue;
         const spouses = members.filter(s => !isMainMember(s) && spouseMap.get(m._id)?.has(s._id));
-        
+
         for (const s of spouses) {
             const unionId = `union-${[m._id, s._id].sort().join('-')}`;
             if (unionNodeIds.has(unionId)) continue;
@@ -223,9 +225,9 @@ export function buildFamilyLayout(members: Member[]) {
             if (mNode && sNode) {
                 nodes.push({
                     id: unionId, type: 'unionNode',
-                    position: { 
-                        x: (mNode.position.x + sNode.position.x) / 2 + (NODE_WIDTH / 2), 
-                        y: mNode.position.y + (NODE_HEIGHT / 2) 
+                    position: {
+                        x: (mNode.position.x + sNode.position.x) / 2 + (NODE_WIDTH / 2),
+                        y: mNode.position.y + (NODE_HEIGHT / 2)
                     },
                     data: {}
                 });

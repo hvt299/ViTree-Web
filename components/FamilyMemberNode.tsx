@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position } from '@xyflow/react';
 import { Gender, LifeStatus, Member } from '@/types/member';
 import { User, CalendarDays, Skull, HeartPulse, MapPin, Moon, UserMinus } from 'lucide-react';
 

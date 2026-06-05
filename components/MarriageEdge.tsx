@@ -1,6 +1,6 @@
 'use client';
 
-import { BaseEdge, EdgeLabelRenderer, getStraightPath, type EdgeProps } from 'reactflow';
+import { BaseEdge, EdgeLabelRenderer, getStraightPath, type EdgeProps } from '@xyflow/react';
 import { Heart } from 'lucide-react';
 
 export default function MarriageEdge({

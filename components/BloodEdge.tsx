@@ -1,6 +1,6 @@
 'use client';
 
-import { BaseEdge, EdgeProps } from 'reactflow';
+import { BaseEdge, EdgeProps } from '@xyflow/react';
 
 export default function BloodEdge({
     id, sourceX, sourceY, targetX, targetY, style = {}, markerEnd,
