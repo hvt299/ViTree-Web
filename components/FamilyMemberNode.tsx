@@ -23,13 +23,16 @@ export default function FamilyMemberNode({ data }: Props) {
 
     const isDeceased = member.status === LifeStatus.DECEASED;
 
-    const genderStyle = isDeceased
+    const baseColor = isDeceased
         ? 'border-gray-400 bg-gray-100/90 grayscale-[0.6] opacity-90'
         : member.gender === Gender.MALE
             ? 'border-blue-400 bg-blue-50'
             : member.gender === Gender.FEMALE
                 ? 'border-pink-400 bg-pink-50'
                 : 'border-slate-400 bg-slate-50';
+
+    const borderStyle = isMain ? 'border-solid' : 'border-dashed opacity-90';
+    const genderStyle = `${baseColor} ${borderStyle}`;
 
     const statusBadge =
         member.status === LifeStatus.ALIVE ? 'bg-green-100 text-green-700 border-green-200'

@@ -9,6 +9,8 @@ import ReactFlow, {
     Edge,
     useReactFlow,
     ReactFlowProvider,
+    Handle,
+    Position,
 } from 'reactflow';
 import { Loader2 } from 'lucide-react';
 
@@ -29,17 +31,28 @@ import {
 import jsPDF from 'jspdf';
 import FamilyToolbar from './FamilyToolbar';
 import { memberService } from '@/services/memberService';
+import BloodEdge from './BloodEdge';
 
 interface Props {
     members: Member[];
 }
 
+function UnionNode() {
+    return (
+        <div className="w-px h-px opacity-0 pointer-events-none">
+            <Handle type="source" position={Position.Bottom} id="bottom" />
+        </div>
+    );
+}
+
 const nodeTypes = {
     familyMember: FamilyMemberNode,
+    unionNode: UnionNode,
 };
 
 const edgeTypes = {
     marriage: MarriageEdge,
+    blood: BloodEdge,
 };
 
 export default function FamilyTree(props: Props) {
@@ -115,7 +128,10 @@ function FamilyTreeInner({ members: initialMembers }: Props) {
         if (!query) return nodes;
 
         return nodes.map(n => {
+            if (n.type === 'unionNode') return n;
+
             const m = n.data.member;
+            if (!m) return n;
 
             const match =
                 m.fullName
@@ -135,6 +151,8 @@ function FamilyTreeInner({ members: initialMembers }: Props) {
         if (!selectedId) return filteredNodes;
 
         return filteredNodes.map(n => {
+            if (n.type === 'unionNode') return n;
+
             const active = n.id === selectedId;
 
             return {
@@ -232,14 +250,30 @@ function FamilyTreeInner({ members: initialMembers }: Props) {
                     nodeTypes={nodeTypes}
                     edgeTypes={edgeTypes}
                     fitView
-                    minZoom={0.1}
+                    fitViewOptions={{ maxZoom: 1 }}
+                    minZoom={0.01}
+                    maxZoom={2}
                 // onNodeClick={(_, node) => {
                 //     setSelectedId(node.id);
                 //     setTimeout(() => fitView(), 100);
                 // }}
                 >
                     <Controls />
-                    <MiniMap />
+                    {/* BẢN ĐỒ MINIMAP ĐƯỢC TÔ MÀU THEO GIỚI TÍNH */}
+                    <MiniMap
+                        nodeColor={(n) => {
+                            if (n.type === 'unionNode') return 'transparent';
+                            const m = n.data?.member;
+                            if (!m) return '#eee';
+                            if (m.status === 'DECEASED') return '#cbd5e1';
+                            if (m.gender === 'MALE') return '#bfdbfe';
+                            if (m.gender === 'FEMALE') return '#fbcfe8';
+                            return '#e2e8f0';
+                        }}
+                        nodeBorderRadius={8}
+                        maskColor="rgba(0, 0, 0, 0.1)"
+                        className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-xl shadow-md overflow-hidden"
+                    />
                     <Background gap={24} size={1} />
                 </ReactFlow>
             </div>

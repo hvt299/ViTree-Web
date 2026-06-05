@@ -5,8 +5,9 @@ type MemberMap = Map<string, Member>;
 
 const NODE_WIDTH = 400;
 const NODE_HEIGHT = 280;
-const X_GAP = 180;
+const X_GAP = 120;
 const Y_GAP = 450;
+const FAMILY_GAP = 300;
 
 function getId(v: any): string {
     if (!v) return '';
@@ -14,21 +15,26 @@ function getId(v: any): string {
     return String(v._id ?? v);
 }
 
-function buildMemberMap(members: Member[]): MemberMap {
-    const map = new Map<string, Member>();
-    members.forEach(m => map.set(m._id, m));
-    return map;
+interface Cluster {
+    main: Member;
+    spouses: Member[];
+    children: Cluster[];
+    width: number;
+    x: number;
+    y: number;
 }
 
 export function buildFamilyLayout(members: Member[]) {
-    const memberMap = buildMemberMap(members);
+    const memberMap = new Map<string, Member>();
+    members.forEach(m => memberMap.set(m._id, m));
+
     const nodes: Node[] = [];
     const edges: Edge[] = [];
 
     const mainIds = new Set<string>();
     const inLawIds = new Set<string>();
-
     const spouseMap = new Map<string, Set<string>>();
+
     members.forEach(m => spouseMap.set(m._id, new Set()));
     members.forEach(m => {
         m.spouseIds?.forEach(sid => {
@@ -41,9 +47,7 @@ export function buildFamilyLayout(members: Member[]) {
     });
 
     members.forEach(m => {
-        const hasParents = (m.fatherIds?.some(id => memberMap.has(getId(id)))) ||
-            (m.motherIds?.some(id => memberMap.has(getId(id))));
-        if (hasParents) {
+        if (m.fatherIds?.some(id => memberMap.has(getId(id))) || m.motherIds?.some(id => memberMap.has(getId(id)))) {
             mainIds.add(m._id);
         }
     });
@@ -53,10 +57,7 @@ export function buildFamilyLayout(members: Member[]) {
         changed = false;
         members.forEach(m => {
             if (mainIds.has(m._id) || inLawIds.has(m._id)) return;
-
-            const spouses = Array.from(spouseMap.get(m._id) || []);
-            const hasMainSpouse = spouses.some(sid => mainIds.has(sid));
-
+            const hasMainSpouse = Array.from(spouseMap.get(m._id) || []).some(sid => mainIds.has(sid));
             if (hasMainSpouse) {
                 inLawIds.add(m._id);
                 changed = true;
@@ -65,204 +66,213 @@ export function buildFamilyLayout(members: Member[]) {
     }
 
     const remaining = members.filter(m => !mainIds.has(m._id) && !inLawIds.has(m._id));
-    remaining.sort((a, b) => {
-        if (a.generation !== b.generation) return (a.generation || 1) - (b.generation || 1);
-        const aM = a.gender === 'MALE' ? 0 : 1;
-        const bM = b.gender === 'MALE' ? 0 : 1;
-        if (aM !== bM) return aM - bM;
-        return a._id.localeCompare(b._id);
-    });
-
+    remaining.sort((a, b) => (a.generation || 1) - (b.generation || 1));
     remaining.forEach(m => {
-        if (mainIds.has(m._id) || inLawIds.has(m._id)) return;
-        mainIds.add(m._id);
-
-        const spouses = Array.from(spouseMap.get(m._id) || []);
-        spouses.forEach(sid => {
-            if (!mainIds.has(sid) && !inLawIds.has(sid)) {
-                inLawIds.add(sid);
-            }
-        });
+        if (!mainIds.has(m._id) && !inLawIds.has(m._id)) {
+            mainIds.add(m._id);
+            Array.from(spouseMap.get(m._id) || []).forEach(sid => inLawIds.add(sid));
+        }
     });
 
     const isMainMember = (m: Member) => mainIds.has(m._id);
-
-    const childrenMap = new Map<string, Member[]>();
-    for (const m of members) {
-        const parents = [...(m.fatherIds || []), ...(m.motherIds || [])];
-        for (const p of parents) {
-            const pId = getId(p);
-            if (!childrenMap.has(pId)) childrenMap.set(pId, []);
-            childrenMap.get(pId)!.push(m);
-        }
-    }
-
     const getOrder = (o?: number) => (!o || o === 0) ? 9999 : o;
-
-    for (const children of childrenMap.values()) {
-        children.sort((a, b) => getOrder(a.orderInFamily) - getOrder(b.orderInFamily));
-    }
-
-    const roots = members.filter(m =>
-        isMainMember(m) &&
-        !(m.fatherIds?.some(f => memberMap.has(getId(f)))) &&
-        !(m.motherIds?.some(mId => memberMap.has(getId(mId))))
-    );
-
-    roots.sort((a, b) => getOrder(a.orderInFamily) - getOrder(b.orderInFamily));
-
-    const lineageOrder = new Map<string, number>();
-    let currentIndex = 0;
-
-    function traverseLineage(memberId: string) {
-        if (lineageOrder.has(memberId)) return;
-        lineageOrder.set(memberId, currentIndex++);
-        const children = childrenMap.get(memberId) || [];
-        for (const child of children) {
-            traverseLineage(child._id);
-        }
-    }
-
-    for (const root of roots) {
-        traverseLineage(root._id);
-    }
-
-    for (const m of members) {
-        if (isMainMember(m) && !lineageOrder.has(m._id)) {
-            traverseLineage(m._id);
-        }
-    }
 
     const isLastChildMap = new Map<string, boolean>();
     const validMains = members.filter(m => isMainMember(m) && (m.orderInFamily || 0) > 0);
-
     for (const m of validMains) {
-        const parentsM = [...(m.fatherIds || []), ...(m.motherIds || [])].map(getId);
-        if (parentsM.length === 0) continue;
-
+        const pM = [...(m.fatherIds || []), ...(m.motherIds || [])].map(getId);
+        if (pM.length === 0) continue;
         let isMax = true;
         for (const other of validMains) {
             if (m._id === other._id) continue;
-            const parentsOther = [...(other.fatherIds || []), ...(other.motherIds || [])].map(getId);
-
-            const shareParent = parentsM.some(p => parentsOther.includes(p));
-            if (shareParent) {
-                if ((other.orderInFamily || 0) > (m.orderInFamily || 0)) {
-                    isMax = false;
-                    break;
-                }
+            const pOther = [...(other.fatherIds || []), ...(other.motherIds || [])].map(getId);
+            if (pM.some(p => pOther.includes(p)) && (other.orderInFamily || 0) > (m.orderInFamily || 0)) {
+                isMax = false; break;
             }
         }
+        if (isMax && (m.orderInFamily || 0) > 1) isLastChildMap.set(m._id, true);
+    }
 
-        if (isMax && (m.orderInFamily || 0) > 1) {
-            isLastChildMap.set(m._id, true);
+    const clusterMap = new Map<string, Cluster>();
+    const visited = new Set<string>();
+
+    function createCluster(member: Member): Cluster {
+        if (clusterMap.has(member._id)) return clusterMap.get(member._id)!;
+        visited.add(member._id);
+
+        const spouses = members.filter(s => !isMainMember(s) && spouseMap.get(member._id)?.has(s._id));
+        
+        const rawChildren = members.filter(c => 
+            isMainMember(c) && (c.fatherIds?.includes(member._id as any) || c.motherIds?.includes(member._id as any))
+        );
+        rawChildren.sort((a, b) => getOrder(a.orderInFamily) - getOrder(b.orderInFamily));
+
+        const childrenClusters: Cluster[] = [];
+        for (const child of rawChildren) {
+            if (!visited.has(child._id)) childrenClusters.push(createCluster(child));
+        }
+
+        const cluster: Cluster = {
+            main: member, spouses, children: childrenClusters,
+            width: 0, x: 0, y: ((member.generation || 1) - 1) * Y_GAP
+        };
+        clusterMap.set(member._id, cluster);
+        return cluster;
+    }
+
+    const roots = members.filter(m => 
+        isMainMember(m) && 
+        !(m.fatherIds?.some(f => memberMap.has(getId(f)))) &&
+        !(m.motherIds?.some(mId => memberMap.has(getId(mId))))
+    ).sort((a, b) => getOrder(a.orderInFamily) - getOrder(b.orderInFamily));
+
+    const rootClusters = roots.map(r => createCluster(r));
+
+    function calcWidth(cluster: Cluster) {
+        const parentNodesCount = 1 + cluster.spouses.length;
+        const parentsWidth = parentNodesCount * NODE_WIDTH + (parentNodesCount - 1) * X_GAP;
+        
+        let childrenWidth = 0;
+        for (const c of cluster.children) childrenWidth += calcWidth(c);
+        if (cluster.children.length > 1) childrenWidth += (cluster.children.length - 1) * X_GAP;
+        
+        cluster.width = Math.max(parentsWidth, childrenWidth);
+        return cluster.width;
+    }
+
+    function assignPositions(cluster: Cluster, centerX: number) {
+        cluster.x = centerX;
+        if (cluster.children.length === 0) return;
+        
+        const totalChildrenWidth = cluster.children.reduce((sum, c) => sum + c.width, 0) + (cluster.children.length - 1) * X_GAP;
+        let currentX = centerX - totalChildrenWidth / 2;
+        
+        for (const c of cluster.children) {
+            const childCenterX = currentX + c.width / 2;
+            assignPositions(c, childCenterX);
+            currentX += c.width + X_GAP;
         }
     }
 
-    const generationMap = new Map<number, Member[]>();
-    for (const m of members) {
-        const gen = m.generation || 1;
-        if (!generationMap.has(gen)) generationMap.set(gen, []);
-        generationMap.get(gen)!.push(m);
+    let currentRootX = 0;
+    for (const rc of rootClusters) {
+        calcWidth(rc);
+        const centerX = currentRootX + rc.width / 2;
+        assignPositions(rc, centerX);
+        currentRootX += rc.width + FAMILY_GAP; 
     }
 
-    const genKeys = [...generationMap.keys()].sort((a, b) => a - b);
+    const placedNodes = new Set<string>();
 
-    for (let gi = 0; gi < genKeys.length; gi++) {
-        const gen = genKeys[gi];
-        const list = generationMap.get(gen)!;
-
-        const mainMembers = list.filter(m => isMainMember(m));
-        const inLaws = list.filter(m => !isMainMember(m));
-
-        mainMembers.sort((a, b) => {
-            const idxA = lineageOrder.get(a._id) ?? 999999;
-            const idxB = lineageOrder.get(b._id) ?? 999999;
-            return idxA - idxB;
-        });
-
-        let currentX = 0;
-        const placed = new Set<string>();
-        const rowNodes: { id: string, x: number, member: Member, isMain: boolean }[] = [];
-
-        for (const m of mainMembers) {
-            if (placed.has(m._id)) continue;
-
-            const spouses = inLaws.filter(s => spouseMap.get(m._id)?.has(s._id));
-            const unplacedSpouses = spouses.filter(s => !placed.has(s._id));
-
-            const leftSpouses = unplacedSpouses.filter((_, i) => i % 2 === 0).reverse();
-            const rightSpouses = unplacedSpouses.filter((_, i) => i % 2 === 1);
-
-            for (const s of leftSpouses) {
-                rowNodes.push({ id: s._id, x: currentX, member: s, isMain: false });
-                placed.add(s._id);
-                currentX += NODE_WIDTH + X_GAP;
-            }
-
-            rowNodes.push({ id: m._id, x: currentX, member: m, isMain: true });
-            placed.add(m._id);
-            currentX += NODE_WIDTH + X_GAP;
-
-            for (const s of rightSpouses) {
-                rowNodes.push({ id: s._id, x: currentX, member: s, isMain: false });
-                placed.add(s._id);
-                currentX += NODE_WIDTH + X_GAP;
-            }
-        }
-
-        const detachedInLaws = inLaws.filter(law => !placed.has(law._id));
-        for (const law of detachedInLaws) {
-            rowNodes.push({ id: law._id, x: currentX, member: law, isMain: false });
-            placed.add(law._id);
-            currentX += NODE_WIDTH + X_GAP;
-        }
-
-        const rowWidth = currentX - X_GAP;
-        const shiftX = -rowWidth / 2;
-
-        for (const rn of rowNodes) {
+    function flattenCluster(cluster: Cluster) {
+        if (placedNodes.has(cluster.main._id)) return;
+        placedNodes.add(cluster.main._id);
+        
+        const m = cluster.main;
+        const spouses = cluster.spouses;
+        
+        const totalNodes = 1 + spouses.length;
+        const totalWidth = totalNodes * NODE_WIDTH + (totalNodes - 1) * X_GAP;
+        let startX = cluster.x - totalWidth / 2 + NODE_WIDTH / 2;
+        
+        const leftSpouses = spouses.filter((_, i) => i % 2 === 0).reverse();
+        const rightSpouses = spouses.filter((_, i) => i % 2 === 1);
+        
+        const pushNode = (mem: Member, x: number, y: number, isMain: boolean) => {
             nodes.push({
-                id: rn.id,
-                type: 'familyMember',
-                position: { x: rn.x + shiftX, y: gi * Y_GAP },
-                data: {
-                    member: rn.member,
-                    isMain: rn.isMain,
-                    isLastChild: isLastChildMap.get(rn.id) || false
-                },
+                id: mem._id, type: 'familyMember',
+                position: { x: x - NODE_WIDTH / 2, y },
+                data: { member: mem, isMain, isLastChild: isLastChildMap.get(mem._id) || false }
             });
+        };
+
+        for (const s of leftSpouses) { pushNode(s, startX, cluster.y, false); startX += NODE_WIDTH + X_GAP; }
+        pushNode(m, startX, cluster.y, true); 
+        startX += NODE_WIDTH + X_GAP;
+        for (const s of rightSpouses) { pushNode(s, startX, cluster.y, false); startX += NODE_WIDTH + X_GAP; }
+        
+        for (const c of cluster.children) flattenCluster(c);
+    }
+
+    for (const rc of rootClusters) flattenCluster(rc);
+
+    for (const m of members) {
+        if (isMainMember(m) && !placedNodes.has(m._id)) {
+            const c = createCluster(m);
+            calcWidth(c);
+            assignPositions(c, currentRootX + c.width / 2);
+            currentRootX += c.width + FAMILY_GAP;
+            flattenCluster(c);
+        }
+    }
+
+    const unionNodeIds = new Set<string>();
+
+    for (const m of members) {
+        if (!isMainMember(m)) continue;
+        const spouses = members.filter(s => !isMainMember(s) && spouseMap.get(m._id)?.has(s._id));
+        
+        for (const s of spouses) {
+            const unionId = `union-${[m._id, s._id].sort().join('-')}`;
+            if (unionNodeIds.has(unionId)) continue;
+            unionNodeIds.add(unionId);
+
+            const mNode = nodes.find(n => n.id === m._id);
+            const sNode = nodes.find(n => n.id === s._id);
+
+            if (mNode && sNode) {
+                nodes.push({
+                    id: unionId, type: 'unionNode',
+                    position: { 
+                        x: (mNode.position.x + sNode.position.x) / 2 + (NODE_WIDTH / 2), 
+                        y: mNode.position.y + (NODE_HEIGHT / 2) 
+                    },
+                    data: {}
+                });
+            }
         }
     }
 
     const edgeSet = new Set<string>();
     for (const m of members) {
         const childId = m._id;
+        const parentIds = [...(m.fatherIds || []), ...(m.motherIds || [])].map(getId).filter(id => memberMap.has(id));
+        if (parentIds.length === 0) continue;
 
-        for (const f of m.fatherIds || []) {
-            const pid = getId(f);
-            if (!memberMap.has(pid)) continue;
-            const key = `f-${pid}-${childId}`;
-            if (edgeSet.has(key)) continue;
-            edgeSet.add(key);
-            edges.push({
-                id: `blood-${key}`, source: pid, target: childId,
-                sourceHandle: 'bottom', targetHandle: 'top', type: 'smoothstep',
-                style: { stroke: '#3b82f6', strokeWidth: 3 },
-            });
+        const parentMembers = parentIds.map(id => memberMap.get(id)!);
+        const mainParents = parentMembers.filter(p => isMainMember(p));
+        const inLawParents = parentMembers.filter(p => !isMainMember(p));
+        let routed = false;
+
+        if (mainParents.length === 1 && inLawParents.length === 1) {
+            const unionId = `union-${[mainParents[0]._id, inLawParents[0]._id].sort().join('-')}`;
+            if (unionNodeIds.has(unionId)) {
+                edges.push({
+                    id: `blood-${unionId}-${childId}`, source: unionId, target: childId,
+                    sourceHandle: 'bottom', targetHandle: 'top', type: 'blood'
+                });
+                routed = true;
+            }
         }
 
-        for (const mo of m.motherIds || []) {
-            const pid = getId(mo);
-            if (!memberMap.has(pid)) continue;
-            const key = `m-${pid}-${childId}`;
-            if (edgeSet.has(key)) continue;
-            edgeSet.add(key);
+        if (!routed && mainParents.length === 1) {
             edges.push({
-                id: `blood-${key}`, source: pid, target: childId,
-                sourceHandle: 'bottom', targetHandle: 'top', type: 'smoothstep',
-                style: { stroke: '#ec4899', strokeWidth: 3 },
+                id: `blood-main-${mainParents[0]._id}-${childId}`, source: mainParents[0]._id, target: childId,
+                sourceHandle: 'bottom', targetHandle: 'top', type: 'blood'
             });
+            routed = true;
+        }
+
+        if (!routed) {
+            for (const pid of parentIds) {
+                const key = `fallback-${pid}-${childId}`;
+                if (edgeSet.has(key)) continue;
+                edgeSet.add(key);
+                edges.push({
+                    id: `blood-${key}`, source: pid, target: childId,
+                    sourceHandle: 'bottom', targetHandle: 'top', type: 'blood'
+                });
+            }
         }
     }
 
@@ -271,26 +281,22 @@ export function buildFamilyLayout(members: Member[]) {
         for (const s of m.spouseIds || []) {
             const sid = getId(s);
             if (!memberMap.has(sid)) continue;
-
             const key = [m._id, sid].sort().join('-');
             if (marriageSet.has(key)) continue;
             marriageSet.add(key);
 
             const mNode = nodes.find(n => n.id === m._id);
             const sNode = nodes.find(n => n.id === sid);
-
-            let sourceHandle = 'right-source';
-            let targetHandle = 'left-target';
+            let sHandle = 'right-source', tHandle = 'left-target';
 
             if (mNode && sNode) {
                 const isMLeft = mNode.position.x < sNode.position.x;
-                sourceHandle = isMLeft ? 'right-source' : 'left-source';
-                targetHandle = isMLeft ? 'left-target' : 'right-target';
+                sHandle = isMLeft ? 'right-source' : 'left-source';
+                tHandle = isMLeft ? 'left-target' : 'right-target';
             }
-
             edges.push({
                 id: `marriage-${key}`, source: m._id, target: sid,
-                sourceHandle, targetHandle, type: 'marriage',
+                sourceHandle: sHandle, targetHandle: tHandle, type: 'marriage',
             });
         }
     }
