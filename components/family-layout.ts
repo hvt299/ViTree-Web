@@ -103,7 +103,7 @@ export function buildFamilyLayout(members: Member[]) {
         const spouses = members.filter(s => !isMainMember(s) && spouseMap.get(member._id)?.has(s._id));
         
         const rawChildren = members.filter(c => 
-            isMainMember(c) && (c.fatherIds?.includes(member._id as any) || c.motherIds?.includes(member._id as any))
+            isMainMember(c) && (c.fatherIds?.map(getId).includes(member._id) || c.motherIds?.map(getId).includes(member._id))
         );
         rawChildren.sort((a, b) => getOrder(a.orderInFamily) - getOrder(b.orderInFamily));
 

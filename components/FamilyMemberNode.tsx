@@ -6,7 +6,7 @@ import { Gender, LifeStatus, Member } from '@/types/member';
 import { User, CalendarDays, Skull, HeartPulse } from 'lucide-react';
 
 interface Props {
-    data: { member: Member; isMain?: boolean; isLastChild?: boolean };
+    data: { member: Member; isMain?: boolean; isLastChild?: boolean; isSelected?: boolean };
 }
 
 function getOrderLabel(order: number, isLastChild?: boolean) {
@@ -19,7 +19,7 @@ function getOrderLabel(order: number, isLastChild?: boolean) {
 }
 
 export default function FamilyMemberNode({ data }: Props) {
-    const { member, isMain, isLastChild } = data;
+    const { member, isMain, isLastChild, isSelected } = data;
 
     const isDeceased = member.status === LifeStatus.DECEASED;
 
@@ -32,17 +32,14 @@ export default function FamilyMemberNode({ data }: Props) {
                 : 'border-slate-400 bg-slate-50';
 
     const borderStyle = isMain ? 'border-solid' : 'border-dashed opacity-90';
-    const genderStyle = `${baseColor} ${borderStyle}`;
+    
+    const selectedStyle = isSelected ? 'ring-4 ring-orange-500 scale-105 z-50 shadow-2xl' : 'hover:scale-[1.02] shadow-xl hover:shadow-2xl';
+    
+    const genderStyle = `${baseColor} ${borderStyle} ${selectedStyle}`;
 
-    const statusBadge =
-        member.status === LifeStatus.ALIVE ? 'bg-green-100 text-green-700 border-green-200'
-            : member.status === LifeStatus.DECEASED ? 'bg-gray-200 text-gray-700 border-gray-300'
-                : 'bg-yellow-100 text-yellow-700 border-yellow-200';
-
+    const statusBadge = member.status === LifeStatus.ALIVE ? 'bg-green-100 text-green-700 border-green-200' : member.status === LifeStatus.DECEASED ? 'bg-gray-200 text-gray-700 border-gray-300' : 'bg-yellow-100 text-yellow-700 border-yellow-200';
     const roleBadge = member.orderInFamily === 1 ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-orange-100 text-orange-700 border-orange-200';
-
     const roleLabel = getOrderLabel(member.orderInFamily, isLastChild);
-
     const showOrder = isMain && member.generation > 1 && member.orderInFamily > 0;
 
     let relationLabel = null;
@@ -53,12 +50,7 @@ export default function FamilyMemberNode({ data }: Props) {
     }
 
     return (
-        <div
-            className={`
-                w-100 rounded-3xl border-[3px] shadow-xl overflow-visible transition-all 
-                hover:shadow-2xl ${genderStyle}
-            `}
-        >
+        <div className={`w-100 rounded-3xl border-[3px] shadow-xl overflow-visible transition-all hover:shadow-2xl duration-300 ${genderStyle}`}>
             <Handle type="target" position={Position.Top} id="top" className="w-3 h-3 bg-blue-500 border-2 border-white" />
             <Handle type="source" position={Position.Bottom} id="bottom" className="w-3 h-3 bg-blue-500 border-2 border-white" />
 
@@ -79,56 +71,23 @@ export default function FamilyMemberNode({ data }: Props) {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                        <div className="text-2xl font-black text-gray-800 leading-snug wrap-break-word">
-                            {member.fullName}
-                        </div>
-
-                        {member.tuName && (
-                            <div className="text-sm font-medium italic text-gray-500 mt-1">
-                                Tự: {member.tuName}
-                            </div>
-                        )}
+                        <div className="text-2xl font-black text-gray-800 leading-snug wrap-break-word">{member.fullName}</div>
+                        {member.tuName && <div className="text-sm font-medium italic text-gray-500 mt-1">Tự: {member.tuName}</div>}
 
                         <div className="mt-2 flex flex-wrap gap-2">
-                            {isMain && (
-                                <span className="px-3 py-1 rounded-full text-sm font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">
-                                    Đời thứ {member.generation}
-                                </span>
-                            )}
-
-                            {showOrder && (
-                                <span className={`px-3 py-1 rounded-full text-sm font-bold border ${roleBadge}`}>
-                                    {roleLabel}
-                                </span>
-                            )}
-
-                            {relationLabel && (
-                                <span className="px-3 py-1 rounded-full text-sm font-bold border bg-purple-100 text-purple-700 border-purple-200">
-                                    {relationLabel}
-                                </span>
-                            )}
+                            {isMain && <span className="px-3 py-1 rounded-full text-sm font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">Đời thứ {member.generation}</span>}
+                            {showOrder && <span className={`px-3 py-1 rounded-full text-sm font-bold border ${roleBadge}`}>{roleLabel}</span>}
+                            {relationLabel && <span className="px-3 py-1 rounded-full text-sm font-bold border bg-purple-100 text-purple-700 border-purple-200">{relationLabel}</span>}
                         </div>
                     </div>
                 </div>
 
                 <div className="text-base font-medium text-gray-700 space-y-2 bg-white/60 p-3 rounded-xl border border-white/40">
-                    {member.birthDate && (
-                        <div className="flex items-center gap-2">
-                            <CalendarDays size={16} className="text-gray-500" />
-                            <span>Sinh: {new Date(member.birthDate).getFullYear()}</span>
-                        </div>
-                    )}
-                    {member.deathDate && (
-                        <div className="flex items-center gap-2">
-                            <Skull size={16} className="text-gray-500" />
-                            <span>Mất: {new Date(member.deathDate).getFullYear()}</span>
-                        </div>
-                    )}
+                    {member.birthDate && <div className="flex items-center gap-2"><CalendarDays size={16} className="text-gray-500" /><span>Sinh: {new Date(member.birthDate).getFullYear()}</span></div>}
+                    {member.deathDate && <div className="flex items-center gap-2"><Skull size={16} className="text-gray-500" /><span>Mất: {new Date(member.deathDate).getFullYear()}</span></div>}
                     <div className="pt-1 flex items-center gap-2">
                         <HeartPulse size={16} className="text-gray-500" />
-                        <span className={`inline-flex px-3 py-1 rounded-full text-sm font-bold shadow-sm border ${statusBadge}`}>
-                            {member.status === LifeStatus.ALIVE ? 'Còn sống' : member.status === LifeStatus.DECEASED ? 'Đã mất' : 'Không rõ'}
-                        </span>
+                        <span className={`inline-flex px-3 py-1 rounded-full text-sm font-bold shadow-sm border ${statusBadge}`}>{member.status === LifeStatus.ALIVE ? 'Còn sống' : member.status === LifeStatus.DECEASED ? 'Đã mất' : 'Không rõ'}</span>
                     </div>
                 </div>
             </div>

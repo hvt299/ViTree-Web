@@ -2,7 +2,7 @@
 
 export default function FamilyTreeLegend() {
     return (
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200 p-4 shadow-sm w-full lg:w-fit">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-100 p-4 shadow-sm w-full">
             <h3 className="font-bold text-gray-800 mb-3 text-sm uppercase tracking-wider">
                 📌 Chú giải Sơ đồ phả hệ
             </h3>
