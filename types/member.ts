@@ -39,7 +39,6 @@ export interface Member {
 
     orderInFamily: number;
     generation: number;
-    branchId?: string;
 
     createdAt?: string;
     updatedAt?: string;

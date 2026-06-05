@@ -71,10 +71,10 @@ function FamilyTreeInner({ members, searchQuery = '', genderFilter = '', statusF
             const isSearchMatch = !searchQuery || m.fullName.toLowerCase().includes(searchQuery.toLowerCase().trim());
             const isGenderMatch = !genderFilter || m.gender === genderFilter;
             const isStatusMatch = !statusFilter || m.status === statusFilter;
-            
+
             const isFilterMatch = isSearchMatch && isGenderMatch && isStatusMatch;
             const isFilterActive = searchQuery || genderFilter || statusFilter;
-            
+
             const isSelected = selectedId === n.id;
             const hasSelection = !!selectedId;
 
@@ -85,7 +85,7 @@ function FamilyTreeInner({ members, searchQuery = '', genderFilter = '', statusF
             return {
                 ...n,
                 style: { ...(n.style as CSSProperties), opacity },
-                data: { ...n.data, isSelected } 
+                data: { ...n.data, isSelected }
             };
         });
     }, [selectedId, nodes, searchQuery, genderFilter, statusFilter]);
@@ -131,7 +131,7 @@ function FamilyTreeInner({ members, searchQuery = '', genderFilter = '', statusF
     return (
         <div className="space-y-3">
             <div ref={wrapperRef} className="h-[80vh] rounded-2xl border bg-linear-to-br from-amber-50 via-white to-orange-50 overflow-hidden relative shadow-sm border-gray-100">
-                
+
                 <div className="absolute top-4 right-4 z-1 flex items-center gap-2">
                     <button onClick={toggleFullscreen} className="p-2.5 bg-white/90 backdrop-blur-md border border-gray-100 shadow-md rounded-xl text-gray-700 hover:bg-gray-50 hover:text-amber-600 transition-all">
                         {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
@@ -142,18 +142,52 @@ function FamilyTreeInner({ members, searchQuery = '', genderFilter = '', statusF
                 {selectedId && selectedMember && familyDetails && (
                     <div className="absolute top-0 right-0 h-full w-80 sm:w-96 bg-white shadow-[-10px_0_30px_rgba(0,0,0,0.1)] z-50 flex flex-col border-l border-gray-200 animate-in slide-in-from-right duration-300">
                         <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50/50 shrink-0">
-                            <h3 className="font-bold text-gray-800 flex items-center gap-2"><MapIcon className="w-5 h-5 text-orange-500"/> Chi tiết Nhánh Trực Hệ</h3>
-                            <button onClick={() => setSelectedId(null)} className="p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-500 rounded-lg"><X className="w-5 h-5"/></button>
+                            <h3 className="font-bold text-gray-800 flex items-center gap-2"><MapIcon className="w-5 h-5 text-orange-500" /> Chi tiết Nhánh Trực Hệ</h3>
+                            <button onClick={() => setSelectedId(null)} className="p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-500 rounded-lg"><X className="w-5 h-5" /></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-slate-50">
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 text-center relative overflow-hidden">
                                 <div className="absolute top-0 left-0 w-full h-12 bg-linear-to-r from-orange-100 to-amber-100" />
                                 <div className="relative w-20 h-20 mx-auto rounded-full bg-white border-4 border-white mb-3 overflow-hidden shadow-md flex items-center justify-center z-10">
-                                    {selectedMember.avatarUrl ? <img src={selectedMember.avatarUrl} alt="Avatar" className="object-cover w-full h-full" /> : <User size={40} className="text-slate-300"/>}
+                                    {selectedMember.avatarUrl ? <img src={selectedMember.avatarUrl} alt="Avatar" className="object-cover w-full h-full" /> : <User size={40} className="text-slate-300" />}
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-900">{selectedMember.fullName}</h2>
-                                <p className="inline-block mt-3 px-3 py-1 bg-amber-50 text-amber-700 font-semibold rounded-full border border-amber-200 text-sm">Đời thứ {selectedMember.generation}</p>
+                                {selectedMember.tuName && <p className="text-sm italic text-gray-500 mt-1">Tự: {selectedMember.tuName}</p>}
+                                <div className="flex justify-center gap-2 mt-3">
+                                    <p className="inline-block px-3 py-1 bg-amber-50 text-amber-700 font-semibold rounded-full border border-amber-200 text-sm">
+                                        Đời thứ {selectedMember.generation}
+                                    </p>
+                                    {selectedMember.isHeirless && (
+                                        <p className="inline-block px-3 py-1 bg-red-50 text-red-600 font-semibold rounded-full border border-red-200 text-sm">
+                                            🛑 Vô tự
+                                        </p>
+                                    )}
+                                </div>
                             </div>
+
+                            {/* KHỐI TIỂU SỬ & NƠI AN TÁNG */}
+                            {(selectedMember.shortNote || selectedMember.lunarDeathAnniversary?.displayText || selectedMember.burialPlace) && (
+                                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3 text-sm">
+                                    {selectedMember.shortNote && (
+                                        <div>
+                                            <span className="font-bold text-gray-700 block mb-1">📖 Tiểu sử / Ghi chú:</span>
+                                            <p className="text-gray-600 italic leading-relaxed">{selectedMember.shortNote}</p>
+                                        </div>
+                                    )}
+                                    {selectedMember.lunarDeathAnniversary?.displayText && (
+                                        <div className="flex items-start gap-2 pt-2 border-t border-gray-50">
+                                            <span className="font-bold text-orange-700 whitespace-nowrap">🌙 Ngày giỗ:</span>
+                                            <span className="text-orange-600">{selectedMember.lunarDeathAnniversary.displayText}</span>
+                                        </div>
+                                    )}
+                                    {selectedMember.burialPlace && (
+                                        <div className="flex items-start gap-2">
+                                            <span className="font-bold text-blue-700 whitespace-nowrap">📍 Mộ phần:</span>
+                                            <span className="text-blue-600">{selectedMember.burialPlace}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                                 <h4 className="font-bold text-gray-800 text-sm mb-5 border-b pb-2">Sơ đồ Truyền thừa</h4>
                                 <div className="space-y-5 relative before:absolute before:inset-0 before:ml-4.5 before:h-full before:w-0.5 before:bg-slate-200">
@@ -204,7 +238,7 @@ function FamilyTreeInner({ members, searchQuery = '', genderFilter = '', statusF
                     minZoom={0.01}
                     maxZoom={2}
                     onNodeClick={(_, node) => { if (node.type !== 'unionNode') focusOnMember(node.id); }}
-                    onPaneClick={() => setSelectedId(null)} 
+                    onPaneClick={() => setSelectedId(null)}
                 >
                     <Controls />
                     {/* BẢN ĐỒ MINIMAP ĐƯỢC TÔ MÀU THEO GIỚI TÍNH */}

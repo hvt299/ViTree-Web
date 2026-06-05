@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { Handle, Position } from 'reactflow';
 import { Gender, LifeStatus, Member } from '@/types/member';
-import { User, CalendarDays, Skull, HeartPulse } from 'lucide-react';
+import { User, CalendarDays, Skull, HeartPulse, MapPin, Moon, UserMinus } from 'lucide-react';
 
 interface Props {
     data: { member: Member; isMain?: boolean; isLastChild?: boolean; isSelected?: boolean };
@@ -32,9 +32,9 @@ export default function FamilyMemberNode({ data }: Props) {
                 : 'border-slate-400 bg-slate-50';
 
     const borderStyle = isMain ? 'border-solid' : 'border-dashed opacity-90';
-    
+
     const selectedStyle = isSelected ? 'ring-4 ring-orange-500 scale-105 z-50 shadow-2xl' : 'hover:scale-[1.02] shadow-xl hover:shadow-2xl';
-    
+
     const genderStyle = `${baseColor} ${borderStyle} ${selectedStyle}`;
 
     const statusBadge = member.status === LifeStatus.ALIVE ? 'bg-green-100 text-green-700 border-green-200' : member.status === LifeStatus.DECEASED ? 'bg-gray-200 text-gray-700 border-gray-300' : 'bg-yellow-100 text-yellow-700 border-yellow-200';
@@ -77,14 +77,40 @@ export default function FamilyMemberNode({ data }: Props) {
                         <div className="mt-2 flex flex-wrap gap-2">
                             {isMain && <span className="px-3 py-1 rounded-full text-sm font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">Đời thứ {member.generation}</span>}
                             {showOrder && <span className={`px-3 py-1 rounded-full text-sm font-bold border ${roleBadge}`}>{roleLabel}</span>}
-                            {relationLabel && <span className="px-3 py-1 rounded-full text-sm font-bold border bg-purple-100 text-purple-700 border-purple-200">{relationLabel}</span>}
+                            {relationLabel && (
+                                <span className="px-3 py-1 rounded-full text-sm font-bold border bg-purple-100 text-purple-700 border-purple-200">
+                                    {relationLabel}
+                                </span>
+                            )}
+                            {member.isHeirless && (
+                                <span className="px-3 py-1 rounded-full text-sm font-bold border bg-red-50 text-red-600 border-red-200 flex items-center gap-1">
+                                    <UserMinus size={14} /> Vô tự
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
 
                 <div className="text-base font-medium text-gray-700 space-y-2 bg-white/60 p-3 rounded-xl border border-white/40">
                     {member.birthDate && <div className="flex items-center gap-2"><CalendarDays size={16} className="text-gray-500" /><span>Sinh: {new Date(member.birthDate).getFullYear()}</span></div>}
-                    {member.deathDate && <div className="flex items-center gap-2"><Skull size={16} className="text-gray-500" /><span>Mất: {new Date(member.deathDate).getFullYear()}</span></div>}
+                    {member.deathDate && (
+                        <div className="flex items-center gap-2">
+                            <Skull size={16} className="text-gray-500" />
+                            <span>Mất: {new Date(member.deathDate).getFullYear()}</span>
+                        </div>
+                    )}
+                    {member.lunarDeathAnniversary?.displayText && (
+                        <div className="flex items-center gap-2">
+                            <Moon size={16} className="text-orange-500" />
+                            <span className="text-orange-700">Giỗ: {member.lunarDeathAnniversary.displayText}</span>
+                        </div>
+                    )}
+                    {member.burialPlace && (
+                        <div className="flex items-center gap-2">
+                            <MapPin size={16} className="text-blue-500" />
+                            <span className="text-blue-700 truncate" title={member.burialPlace}>{member.burialPlace}</span>
+                        </div>
+                    )}
                     <div className="pt-1 flex items-center gap-2">
                         <HeartPulse size={16} className="text-gray-500" />
                         <span className={`inline-flex px-3 py-1 rounded-full text-sm font-bold shadow-sm border ${statusBadge}`}>{member.status === LifeStatus.ALIVE ? 'Còn sống' : member.status === LifeStatus.DECEASED ? 'Đã mất' : 'Không rõ'}</span>

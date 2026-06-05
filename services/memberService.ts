@@ -12,10 +12,6 @@ export const memberService = {
         return apiClient.post<any, Member>('/members', data);
     },
 
-    search: async (keyword: string) => {
-        return apiClient.get<any, Member[]>(`/members/search?q=${encodeURIComponent(keyword)}`);
-    },
-
     update: async (id: string, data: any) => {
         return apiClient.patch<any, Member>(`/members/${id}`, data);
     },

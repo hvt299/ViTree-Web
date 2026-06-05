@@ -133,7 +133,7 @@ export default function MemberModal({ isOpen, onClose, onSuccess, members, editD
     const [formData, setFormData] = useState({
         fullName: '', tuName: '', gender: Gender.MALE, status: LifeStatus.ALIVE,
         isHeirless: false, birthDate: '', deathDate: '', burialPlace: '', shortNote: '',
-        generation: 1, orderInFamily: 1, branchId: '',
+        generation: 1, orderInFamily: 1,
         fatherIds: [] as string[], motherIds: [] as string[], spouseIds: [] as string[],
         lunarDay: '', lunarMonth: '', lunarIsLeap: false, lunarText: ''
     });
@@ -158,7 +158,6 @@ export default function MemberModal({ isOpen, onClose, onSuccess, members, editD
                     deathDate: editData.deathDate ? editData.deathDate.split('T')[0] : '',
                     burialPlace: editData.burialPlace || '', shortNote: editData.shortNote || '',
                     generation: editData.generation ?? 1, orderInFamily: editData.orderInFamily ?? 1,
-                    branchId: editData.branchId || '',
                     fatherIds: getParentIds(editData.fatherIds), motherIds: getParentIds(editData.motherIds), spouseIds: getParentIds(editData.spouseIds),
                     lunarDay: editData.lunarDeathAnniversary?.day?.toString() || '',
                     lunarMonth: editData.lunarDeathAnniversary?.month?.toString() || '',
@@ -169,7 +168,7 @@ export default function MemberModal({ isOpen, onClose, onSuccess, members, editD
                 setFormData({
                     fullName: '', tuName: '', gender: Gender.MALE, status: LifeStatus.ALIVE,
                     isHeirless: false, birthDate: '', deathDate: '', burialPlace: '', shortNote: '',
-                    generation: 1, orderInFamily: 1, branchId: '',
+                    generation: 1, orderInFamily: 1,
                     fatherIds: [], motherIds: [], spouseIds: [],
                     lunarDay: '', lunarMonth: '', lunarIsLeap: false, lunarText: ''
                 });
@@ -209,7 +208,7 @@ export default function MemberModal({ isOpen, onClose, onSuccess, members, editD
                 fullName: formData.fullName, tuName: formData.tuName, gender: formData.gender,
                 status: formData.status, isHeirless: formData.isHeirless,
                 generation: Number(formData.generation), orderInFamily: Number(formData.orderInFamily),
-                branchId: formData.branchId, shortNote: formData.shortNote, burialPlace: formData.burialPlace,
+                shortNote: formData.shortNote, burialPlace: formData.burialPlace,
                 fatherIds: formData.fatherIds, motherIds: formData.motherIds, spouseIds: formData.spouseIds,
             };
 
@@ -311,6 +310,10 @@ export default function MemberModal({ isOpen, onClose, onSuccess, members, editD
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">Thứ bậc (0: Không rõ, 1: Trưởng, 2: Thứ...)</label>
                                     <input type="number" min="0" value={formData.orderInFamily} onChange={e => setFormData({ ...formData, orderInFamily: Number(e.target.value) })} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tiểu sử / Ghi chú ngắn</label>
+                                    <textarea rows={3} value={formData.shortNote} onChange={e => setFormData({ ...formData, shortNote: e.target.value })} placeholder="VD: Đỗ Đệ nhất giáp Tiến sĩ cập đệ năm 20 tuổi..." className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none transition-all resize-none" />
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl cursor-pointer hover:bg-orange-50/50 transition-colors">
