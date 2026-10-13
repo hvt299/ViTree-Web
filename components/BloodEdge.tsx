@@ -1,13 +1,12 @@
 'use client';
 
-import { BaseEdge, EdgeProps } from '@xyflow/react';
+import { BaseEdge, type EdgeProps } from '@xyflow/react';
 
 export default function BloodEdge({
     id, sourceX, sourceY, targetX, targetY, style = {}, markerEnd,
 }: EdgeProps) {
-
+    // Smooth orthogonal step path with rounded corners
     const midY = sourceY + (targetY - sourceY) / 2;
-
     const path = `M ${sourceX} ${sourceY} L ${sourceX} ${midY} L ${targetX} ${midY} L ${targetX} ${targetY}`;
 
     return (
@@ -15,12 +14,12 @@ export default function BloodEdge({
             id={id}
             path={path}
             style={{
-                ...style,
                 fill: 'none',
-                stroke: '#94a3b8',
-                strokeWidth: 3,
+                stroke: '#64748b',
+                strokeWidth: 2.5,
                 strokeLinecap: 'round',
-                strokeLinejoin: 'round'
+                strokeLinejoin: 'round',
+                ...style,
             }}
             markerEnd={markerEnd}
         />
