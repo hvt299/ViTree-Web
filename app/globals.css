@@ -1,26 +1,122 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --font-sans: var(--font-be-vietnam-pro), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-be-vietnam: var(--font-be-vietnam-pro), sans-serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark, [data-theme="dark"] {
+  color-scheme: dark;
+  --background: #090d16;
+  --foreground: #f8fafc;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-be-vietnam-pro), system-ui, -apple-system, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-be-vietnam-pro), system-ui, -apple-system, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb,
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* React Flow theme customizations */
+.react-flow__background {
+  transition: background-color 0.2s ease;
+}
+
+.react-flow__attribution {
+  display: none !important;
+}
+
+/* DEDICATED PRINT STYLES: ONLY PRINT THE FAMILY TREE DIAGRAM */
+@media print {
+  @page {
+    size: auto;
+    margin: 10mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Hide everything on page */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Only display the tree print canvas and its descendants */
+  #vitree-print-canvas,
+  #vitree-print-canvas * {
+    visibility: visible;
+  }
+
+  #vitree-print-canvas {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+    z-index: 9999 !important;
+  }
+
+  /* Hide UI toolbars, floating panels, legend, and drawers on print */
+  .no-print,
+  .react-flow__panel,
+  .react-flow__controls,
+  .react-flow__minimap {
+    display: none !important;
+    visibility: hidden !important;
+  }
 }
